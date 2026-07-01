@@ -4,6 +4,107 @@ from middleware.auth_middleware import token_required
 
 journal_bp = Blueprint('journal', __name__)
 
+
+# ============================================================
+# Kamus rekomendasi kegiatan anti-stres berbasis kata kunci
+# Pola sama seperti chatbot_routes.py (rule-based), supaya
+# konsisten dengan arsitektur yang sudah ada.
+# Bisa diganti API AI (OpenAI/Gemini) nantinya jika perlu.
+# ============================================================
+STRESS_ACTIVITY_MAP = {
+    "cemas": {
+        "label": "Cemas",
+        "keywords": ["cemas", "khawatir", "gelisah", "deg-degan", "takut", "panik"],
+        "activities": [
+            "Latihan napas 4-4-4: tarik napas 4 detik, tahan 4 detik, embuskan 4 detik",
+            "Jalan kaki santai 10 menit di luar ruangan",
+            "Tulis 3 hal yang masih bisa kamu kendalikan saat ini",
+        ],
+    },
+    "stres": {
+        "label": "Stres / Tertekan",
+        "keywords": ["stres", "stress", "tertekan", "deadline", "numpuk", "beban", "overwhelmed"],
+        "activities": [
+            "Istirahat 10-15 menit tanpa gadget",
+            "Buat daftar prioritas, kerjakan satu per satu",
+            "Dengarkan musik instrumental yang menenangkan",
+        ],
+    },
+    "lelah": {
+        "label": "Lelah",
+        "keywords": ["lelah", "capek", "cape", "ngantuk", "kecapean", "burnout", "ngos-ngosan"],
+        "activities": [
+            "Tidur lebih awal malam ini",
+            "Peregangan ringan selama 5 menit",
+            "Minum air putih yang cukup dan kurangi kafein",
+        ],
+    },
+    "sedih": {
+        "label": "Sedih",
+        "keywords": ["sedih", "kecewa", "nangis", "menangis", "patah hati", "down", "galau"],
+        "activities": [
+            "Tulis perasaanmu lebih lanjut di jurnal, ini sudah langkah bagus",
+            "Hubungi teman atau keluarga yang kamu percaya",
+            "Tonton atau dengarkan sesuatu yang menenangkan",
+        ],
+    },
+    "marah": {
+        "label": "Marah / Kesal",
+        "keywords": ["marah", "kesal", "emosi", "jengkel", "benci", "sebal"],
+        "activities": [
+            "Jauh sejenak dari situasi yang memicu, beri jeda untuk diri sendiri",
+            "Olahraga ringan untuk melepas energi negatif",
+            "Tulis apa yang membuatmu marah, baca ulang setelah lebih tenang",
+        ],
+    },
+    "kesepian": {
+        "label": "Kesepian",
+        "keywords": ["sendiri", "kesepian", "sepi", "tidak ada teman", "kosong"],
+        "activities": [
+            "Hubungi satu orang yang sudah lama tidak kamu sapa",
+            "Ikut komunitas atau aktivitas sosial ringan",
+            "Lakukan hobi yang kamu suka, seperti menggambar atau membaca",
+        ],
+    },
+}
+
+DEFAULT_ACTIVITIES = {
+    "label": "Umum",
+    "activities": [
+        "Luangkan 10 menit untuk diam dan bernapas tenang",
+        "Lakukan aktivitas fisik ringan, seperti jalan kaki",
+        "Konsisten menulis jurnal membantu kamu memahami emosi sendiri",
+    ],
+}
+
+
+def get_stress_recommendations(content: str, max_categories: int = 2):
+    """
+    Cocokkan isi jurnal dengan kata kunci yang ada, lalu kembalikan
+    daftar rekomendasi kegiatan anti-stres yang relevan.
+    Kalau tidak ada kata kunci yang cocok, kembalikan rekomendasi umum.
+    """
+    text = (content or "").lower()
+    matched = []
+
+    for info in STRESS_ACTIVITY_MAP.values():
+        if any(kw in text for kw in info["keywords"]):
+            matched.append({
+                "kategori": info["label"],
+                "kegiatan": info["activities"],
+            })
+        if len(matched) >= max_categories:
+            break
+
+    if not matched:
+        matched.append({
+            "kategori": DEFAULT_ACTIVITIES["label"],
+            "kegiatan": DEFAULT_ACTIVITIES["activities"],
+        })
+
+    return matched
+
+
 # ============================================================
 # GET /journal — Ambil semua jurnal milik user
 # ============================================================
@@ -71,7 +172,8 @@ def create_journal(current_user_id):
         return jsonify({
             "success": True,
             "message": "Jurnal berhasil disimpan",
-            "data": {"id": journal_id}
+            "data": {"id": journal_id},
+            "recommendations": get_stress_recommendations(content)
         }), 201
 
     finally:
@@ -97,6 +199,7 @@ def update_journal(current_user_id, journal_id):
 
     conn, cursor = get_db()
     try:
+        # Pastikan jurnal milik user ini
         cursor.execute(
             "SELECT id FROM journals WHERE id=%s AND user_id=%s",
             (journal_id, current_user_id)
@@ -110,7 +213,11 @@ def update_journal(current_user_id, journal_id):
         )
         conn.commit()
 
-        return jsonify({"success": True, "message": "Jurnal berhasil diperbarui"}), 200
+        return jsonify({
+            "success": True,
+            "message": "Jurnal berhasil diperbarui",
+            "recommendations": get_stress_recommendations(content)
+        }), 200
 
     finally:
         cursor.close()
