@@ -1,54 +1,44 @@
 from flask import Blueprint, request, jsonify
 from database import get_db, release_db
 from middleware.auth_middleware import token_required
-import random
+
+import os
+from dotenv import load_dotenv
+import google.generativeai as genai
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
-# ============================================================
-# Kamus respons chatbot berbasis kata kunci (rule-based)
-# Bisa diganti dengan API AI (OpenAI/Gemini) nantinya
-# ============================================================
-RESPONSES = {
-    "sedih": [
-        "Aku mengerti perasaanmu. Wajar untuk merasa sedih, ini bagian dari proses. Apakah ada sesuatu yang ingin kamu ceritakan?",
-        "Rasa sedih itu valid. Cobalah untuk tidak menyalahkan diri sendiri ya. Aku di sini mendengarkanmu.",
-    ],
-    "cemas": [
-        "Kecemasan memang berat. Coba tarik napas dalam-dalam: hirup 4 detik, tahan 4 detik, hembuskan 4 detik.",
-        "Saat cemas, fokus pada hal-hal yang bisa kamu kendalikan sekarang. Satu langkah kecil sudah cukup.",
-    ],
-    "stress": [
-        "Stres adalah sinyal tubuhmu untuk beristirahat. Sudahkah kamu minum air dan meregangkan tubuh hari ini?",
-        "Coba luangkan 10 menit untuk relaksasi. Musik pelan atau jalan-jalan singkat bisa sangat membantu.",
-    ],
-    "lelah": [
-        "Kelelahan fisik dan mental itu nyata. Penting untuk memberi dirimu izin untuk istirahat.",
-        "Tubuh dan pikiranmu butuh pemulihan. Tidur yang cukup adalah salah satu perawatan diri terpenting.",
-    ],
-    "bahagia": [
-        "Senang mendengar kamu bahagia! Perasaan positif seperti ini patut disyukuri dan dirayakan.",
-        "Bagus sekali! Catat momen bahagia ini supaya kamu bisa mengingatnya di hari-hari yang lebih berat.",
-    ],
-    "marah": [
-        "Marah adalah emosi yang normal. Coba ekspresikan dengan cara yang sehat, seperti menulis jurnal.",
-        "Saat marah, cobalah menjauh sejenak dari situasi itu dan berikan dirimu waktu untuk tenang.",
-    ],
-    "default": [
-        "Terima kasih sudah berbagi. Aku selalu di sini untuk mendengarkan.",
-        "Perasaanmu penting. Ceritakan lebih lanjut jika kamu mau, aku siap mendengarkan.",
-        "Aku memahami situasimu. Ingat, kamu tidak sendirian dalam perjalanan ini.",
-        "Satu langkah kecil setiap hari sudah merupakan pencapaian yang luar biasa.",
-    ]
-}
+load_dotenv()
+
+genai.configure(
+    api_key=os.getenv("GEMINI_API_KEY")
+)
+
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 def get_reply(message: str) -> str:
-    """Cari respons berdasarkan kata kunci dalam pesan."""
-    message_lower = message.lower()
-    for keyword, replies in RESPONSES.items():
-        if keyword in message_lower:
-            return random.choice(replies)
-    return random.choice(RESPONSES["default"])
+
+    prompt = f"""
+Kamu adalah MindCare AI, asisten kesehatan mental pada aplikasi MindCare.
+
+Tugasmu:
+- Membantu pengguna mengenali mood harian.
+- Memberikan dukungan emosional yang hangat.
+- Berikan saran sederhana yang aman.
+- Jangan memberikan diagnosis psikologis.
+- Jangan menyebut pengguna mengalami depresi, bipolar, PTSD, atau gangguan mental lainnya.
+- Jika pengguna menunjukkan tanda ingin menyakiti diri sendiri atau orang lain, sarankan segera menghubungi psikolog, keluarga, atau layanan darurat setempat.
+- Jawab menggunakan Bahasa Indonesia yang sopan dan mudah dipahami.
+- Jawaban maksimal sekitar 150 kata.
+
+Pesan pengguna:
+
+{message}
+"""
+
+    response = model.generate_content(prompt)
+
+    return response.text
 
 
 # ============================================================
