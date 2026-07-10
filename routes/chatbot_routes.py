@@ -4,7 +4,7 @@ from middleware.auth_middleware import token_required
 
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
