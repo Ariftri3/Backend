@@ -38,7 +38,8 @@ def predict_emotion_from_base64(base64_string):
         predictions = DeepFace.analyze(
             img_path=img,
             actions=["emotion"],
-            enforce_detection=False,
+            enforce_detection=True,
+            detector_backend="mediapipe",
         )
     except Exception as e:
         return {"status": "error", "message": f"Model gagal memproses gambar: {str(e)}"}

@@ -10,11 +10,8 @@ chatbot_bp = Blueprint('chatbot', __name__)
 
 load_dotenv()
 
-genai.configure(
-    api_key=os.getenv("GEMINI_API_KEY")
-)
-
-model = genai.GenerativeModel("gemini-2.5-flash")
+# Gunakan syntax v2 dari google-genai
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def get_reply(message: str) -> str:
 
@@ -36,7 +33,10 @@ Pesan pengguna:
 {message}
 """
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
 
     return response.text
 

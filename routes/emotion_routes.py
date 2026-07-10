@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from database import get_db, release_db
 from middleware.auth_middleware import token_required
+from emotion_detector import predict_emotion_from_base64
 
 emotion_bp = Blueprint('emotion', __name__)
 
@@ -86,3 +87,39 @@ def get_emotions(current_user_id):
     finally:
         cursor.close()
         release_db(conn)
+
+# ============================================================
+# POST /emotion/predict — Prediksi emosi dari base64 image
+# ============================================================
+@emotion_bp.route('/emotion/predict', methods=['POST'])
+@token_required
+def predict_emotion(current_user_id):
+    """
+    Menerima base64 image dan mengembalikan hasil prediksi DeepFace.
+    Header: Authorization: Bearer <token>
+    Body JSON: { "image_base64": "..." }
+    """
+    data = request.json
+    base64_string = data.get("image_base64")
+
+    if not base64_string:
+        return jsonify({
+            "success": False,
+            "message": "image_base64 wajib diisi"
+        }), 400
+
+    # Panggil model DeepFace
+    result = predict_emotion_from_base64(base64_string)
+
+    if result.get("status") == "error":
+        return jsonify({
+            "success": False,
+            "message": result.get("message")
+        }), 400
+
+    return jsonify({
+        "success": True,
+        "emotion": result.get("emotion"),
+        "confidence": result.get("confidence"),
+        "raw_emotion": result.get("raw_emotion")
+    }), 200
