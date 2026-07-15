@@ -8,6 +8,8 @@ from routes.assessment_routes import assessment_bp
 from routes.chatbot_routes    import chatbot_bp
 from routes.profile_routes    import profile_bp
 from routes.emotion_routes    import emotion_bp
+from routes.analytics_routes  import analytics_bp
+from routes.bigdata_routes    import bigdata_bp
 
 app = Flask(__name__)
 CORS(app)  # Izinkan semua origin (Flutter web/mobile)
@@ -69,6 +71,8 @@ app.register_blueprint(assessment_bp)
 app.register_blueprint(chatbot_bp)
 app.register_blueprint(profile_bp)
 app.register_blueprint(emotion_bp)
+app.register_blueprint(analytics_bp)
+app.register_blueprint(bigdata_bp)
 
 # ============================================================
 # Route utama — health check

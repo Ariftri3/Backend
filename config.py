@@ -23,6 +23,7 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 # Connection string Postgres langsung (Settings > Database > Connection string > URI)
 # Pakai mode "Session pooler" supaya stabil dipakai dari Flask.
 DATABASE_URL = os.getenv("DATABASE_URL", "")
+MONGO_URI = os.getenv("MONGO_URI", "mongodb+srv://arkan:mood123@cluster0.wrgqjch.mongodb.net/?appName=Cluster0")
 
 print("========== CONFIG ==========")
 print("SUPABASE_URL =", SUPABASE_URL)

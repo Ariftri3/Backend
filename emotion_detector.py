@@ -35,14 +35,17 @@ def predict_emotion_from_base64(base64_string):
         return {"status": "error", "message": "Gambar rusak atau tidak dapat dibaca"}
 
     try:
+        # Menggunakan OpenCV sebagai backend detektor wajah (sangat ringan, 0MB RAM tambahan)
+        # Model 'emotion' bawaan DeepFace juga sangat kecil (~1.2MB)
+        # Ini aman untuk Railway (Free Tier) dan berjalan cepat secara lokal
         predictions = DeepFace.analyze(
             img_path=img,
             actions=["emotion"],
             enforce_detection=True,
-            detector_backend="mediapipe",
+            detector_backend="opencv",
         )
     except Exception as e:
-        return {"status": "error", "message": f"Model gagal memproses gambar: {str(e)}"}
+        return {"status": "error", "message": f"Wajah tidak terdeteksi: {str(e)}"}
 
     if not predictions:
         return {"status": "error", "message": "Tidak ada hasil prediksi"}
@@ -57,4 +60,4 @@ def predict_emotion_from_base64(base64_string):
         "emotion": EMOTION_TRANSLATION.get(dominant_emotion, dominant_emotion),
         "confidence": confidence,
         "raw_emotion": dominant_emotion,
-    }
+    }
