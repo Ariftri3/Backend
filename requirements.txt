@@ -6,8 +6,8 @@ supabase==2.8.1
 python-dotenv==1.0.0
 google-genai
 opencv-python-headless
-deepface
-tf-keras
+mediapipe
+Pillow
 gunicorn
 pymongo==4.7.2
 dnspython==2.6.1
